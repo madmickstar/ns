@@ -91,15 +91,14 @@ def main():
 
     # test for dns suffixes and warn user only if a plain hostname is in the list to resolve
     dns_suffixes = nstools.dns_suffix_query(args)
-    if not len(dns_suffixes) == 0:
+    if len(dns_suffixes) == 0:
         for domains in args.domain:
             try:
                 a = ProfileHostname(domains)
             except Exception, err:
                 continue
             if 'HOSTNAME' in a.hostname_type():
-                logger.warning('**Warning** Plane hostname detected and no DNS suffixes')
-                logger.warning('**Warning** found to append to the hostname\n')
+                logger.warning('**Warning** Plane hostname detected and no DNS suffixes found\n')
                 break
 
     # cycle through domains
