@@ -43,6 +43,7 @@ Usage
 `
  ns {hostname} | {IP address} | {URL/URI} [ -s {server IP} | -t {1-10) | -l {5,10,20,30,60} | -h | -d | --version ]
 `
+
 Argument  | Type   | Format        | Default                    | Description
 ----------|--------|---------------|----------------------------|--------------------
 hostname | string | {hostname} | No default value | hostname to query, accepts multiple strings
