@@ -87,28 +87,59 @@ class ProfileHostname:
         except:
             return False
 
+
+        
+    def query_hostname(self):
+        self._dns_profile = self.profile_dns()
+        self.query_results = self.query_that_host(self._dns_profile)
+        return self.query_results, self._dns_profile
+
+    def query_cname(self):
+        self._cname_profile = self.profile_cname()
+        self.query_results = self.query_that_host(self._cname_profile)
+        return self.query_results, self._cname_profile
+
     def profile_dns(self):
-        self._dns_profile = {'Domain_Name': self._domain_name,
+        dns_profile = {'Domain_Name': self._domain_name,
                          'Query_IP': self._query_ip,
                          'Hostname_Type': self._hostname_type,
                          'Query_Type': self.dns_query_type(),
                          'DNS_Serv': self.server_list,
                          'DNS_TO': self._timeout,
                          'DNS_LT': self._lifetime}
-        return self._dns_profile
+        return dns_profile
 
     def profile_cname(self):
         if self._ptr_ip is not None:
             self._query_ip=self._ptr_ip
-        self._cname_profile = {'Domain_Name': self._domain_name,
+        cname_profile = {'Domain_Name': self._domain_name,
                          'Query_IP': self._query_ip,
                          'Hostname_Type': self._hostname_type,
                          'Query_Type': 'CNAME',
                          'DNS_Serv': self.server_list,
                          'DNS_TO': self._timeout,
                          'DNS_LT': self._lifetime}
-        return self._cname_profile
-
+        return cname_profile
+        
+    def query_that_host(self, dict_queryserver):
+        self.dict_queryserver = dict_queryserver
+        results = []
+        try:
+            myResolver = dns.resolver.Resolver()
+            myResolver.timeout = self.dict_queryserver['DNS_TO']
+            myResolver.lifetime = self.dict_queryserver['DNS_LT']
+            if not len(self.dict_queryserver['DNS_Serv']) == 0:
+                myResolver.nameservers = self.dict_queryserver['DNS_Serv']
+            myAnswers = myResolver.query(self.dict_queryserver['Domain_Name'], self.dict_queryserver['Query_Type'])
+            #print myAnswers.__dict__
+            #print dir(myAnswers[0])
+            for rdata in myAnswers:
+                results.append(str(rdata))
+            return results
+        except:
+            return results
+        
+        
 class QueryServer():
 
     def __init__(self, dict_queryserver):

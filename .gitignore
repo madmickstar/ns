@@ -1,7 +1,6 @@
 *.py[cod]
 *.log
 *_old.py
-logging.ini
-logging_debug.ini
 dist
 build
+clean_build.bat
