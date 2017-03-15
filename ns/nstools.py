@@ -4,25 +4,12 @@
 import os
 import sys
 import re
-import socket
 import logging
-import _winreg          # import windows registry functionality
-import platform         # import for detecting OS
-import subprocess       # import handles grabbing output from windows command ifconfig /all
+import socket
+import _winreg 
+import platform
 from codecs import open
-
 from nsobjects import QueryServer
-
-
-#def get_version(path):
-#    fullpath = os.path.join(os.path.dirname(sys.argv[0]), path)
-#    with open(fullpath, encoding='utf-8') as f:
-#        version_file = f.read()
-#    regex = r"^__version__ = ['\"]([^'\"]*)['\"]"
-#    version_match = re.search(regex, version_file, re.M)
-#    if version_match:
-#        return version_match.group(1)
-#    raise RuntimeError('Unable to find version string in %s.' % version_file)
 
 
 # Print cli arguments
@@ -53,6 +40,7 @@ def print_debug_query(dict_dnsquery, url_type):
                   dict_dnsquery['Query_Type'],
                   dict_dnsquery['Domain_Name'],
                   dict_dnsquery['Query_IP'])
+
 
 # test domain for ipv4 or domain name
 def test_ipv4(netloc):
@@ -92,26 +80,18 @@ def test_dns_server(dns_server_list):
     return final_dns_list
 
 
-## get DNS details from windows command output
-#def get_local_dns():
-#    proc = subprocess.check_output("ipconfig /all" )
-#    dns_ip_string = re.compile(r'(?:DNS Servers . . . . . . . . . . . : |[ ]{35,})(\d+\.\d+\.\d+\.\d+)')
-#    local_dns_list = dns_ip_string.findall(proc)
-#    return local_dns_list
+def dns_suffix_query():
+    """
+    Detects OS and gets list of DNS suffixes
 
-
-# returns operating system flavour and release
-def get_os():
+    Returns:
+        dns_suffixes: dns suffixes in a list
+    """
     logger = logging.getLogger(__name__)
-    logger.debug('Detecting OS %s %s', platform.system(), platform.release())
-    return platform.system(), platform.release()
-
-
-def dns_suffix_query(args):
-    logger = logging.getLogger(__name__)
-    os_system, os_release = get_os()                                 # get OS details
+    os_system, os_release = platform.system(), platform.release()            # get OS details
+    logger.debug('Detected OS %s %s', os_system, os_release)
     if os_system == 'Windows':
-        dns_suffixes = get_windows_suffixes(os_system, os_release, args)
+        dns_suffixes = get_windows_suffixes(os_system, os_release)
     elif os_system == 'Linux':
         try:
             dns_suffixes = get_linux_suffixes()
@@ -130,7 +110,17 @@ def dns_suffix_query(args):
 
 
 # get dns suffixes from windows registry
-def get_windows_suffixes(os_system, os_release, args):
+def get_windows_suffixes(os_system, os_release):
+    """
+    Creates list of suffixes for windows based OS, from registry keys
+
+    Args:
+        os_system: OS
+        os_release: OS Version 
+
+    Returns:
+        suffixes: dns suffixes in a list
+    """
     logger = logging.getLogger(__name__)
 
     dns_suffix_list = []
@@ -175,6 +165,12 @@ def get_windows_suffixes(os_system, os_release, args):
 
 # get suffixes from linux resolv.conf - untested currently
 def get_linux_suffixes():
+    """
+    Creates list of suffixes for linux based OS
+
+    Returns:
+        suffixes: dns suffixes in a list
+    """
     suffixes = []
     try:
         with open( '/etc/resolv.conf', 'r' ) as resolvconf:
@@ -184,46 +180,23 @@ def get_linux_suffixes():
         return suffixes
     except IOError as error:
         return error.strerror
-
-
-def cname_lookup(dict_dnsquery, url_type, args):
-    logger = logging.getLogger(__name__)
-    logger.debug('Domain profile - URL = %s, Name_Type = %s, Q_Type = %s, Q_Name = %s, Q_IP = %s',
-                  url_type,
-                  dict_dnsquery['Hostname_Type'],
-                  dict_dnsquery['Query_Type'],
-                  dict_dnsquery['Domain_Name'],
-                  dict_dnsquery['Query_IP'])
-    if args.debug:
-        print_debug_query(dict_dnsquery)
-    c = QueryServer(dict_dnsquery)
-    dns_result = c.query_host()
-    if not len(dns_result) == 0:
-        print_success(dns_result, dict_dnsquery)
-    else:
-        logger.debug('Alias DNS lookup unsuccessful')
-    return dns_result
-
-    
-def multiple_results(dns_result, dict_dnsquery, multiple_results):
-    logger = logging.getLogger(__name__)
-    #logger.debug('Multi Results %s %s', dns_result, multiple_results)
-    for result in dns_result:
-        test_result = result
-        # strip exactly one dot from the right, if present
-        if test_result[-1] == ".":
-            test_result = test_result[:-1]
-        if test_result not in multiple_results:
-            logger.debug('Multi Results %s not in %s appending ', test_result, multiple_results)
-            multiple_results.append(result)
-        else:
-           logger.debug('Multi Results %s is in %s ', test_result, multiple_results)
-    return multiple_results    
     
 
-def remove_dups(dns_result, dict_dnsquery, results_lol):
+def track_results(dns_result, dict_dnsquery, tracked_results_lol):
+    """
+    tracks dns results in list of list, duplicates are removed from results and returned
+    
+    Args:
+        dns_result: list of results from DNS query
+        dict_dnsquery: dictionary profile of queried hostname 
+        tracked_results_lol: list of lists of accumulated results used to track the duplicates
+        
+    Returns:
+        tracked_results_lol: updated accumulated list of lists 
+        alt_dns_result: dns results with duplicates removed in list 
+    """
     logger = logging.getLogger(__name__)
-    logger.debug('Removing duplicates %s', results_lol)
+    logger.debug('Removing duplicates %s', tracked_results_lol)
     alt_dns_result = []
     for result in dns_result:
         found = False
@@ -232,23 +205,23 @@ def remove_dups(dns_result, dict_dnsquery, results_lol):
         if test_result[-1] == ".":
             test_result = test_result[:-1]
         if "PTR" in dict_dnsquery['Query_Type']:
-            for row in results_lol:
+            for row in tracked_results_lol:
                 if row[0] == test_result and row[1] == dict_dnsquery['Query_IP']:
-                    logger.debug('Removing duplicates found dups %s %s %s %s', row[0], test_result, row[1], dict_dnsquery['Query_IP'])
+                    logger.debug('Found dups %s %s %s %s', row[0], test_result, row[1], dict_dnsquery['Query_IP'])
                     found = True
             if not found:
-                results_lol.append([test_result, dict_dnsquery['Query_IP']])
+                tracked_results_lol.append([test_result, dict_dnsquery['Query_IP']])
                 alt_dns_result.append(result)
         else:
-            for row in results_lol:
+            for row in tracked_results_lol:
                 if row[0] == dict_dnsquery['Domain_Name'] and row[1] == test_result:
-                    logger.debug('Removing duplicates found dups %s %s %s %s', row[0], dict_dnsquery['Domain_Name'], row[1], test_result)
+                    logger.debug('Found dups %s %s %s %s', row[0], dict_dnsquery['Domain_Name'], row[1], test_result)
                     found = True
             if not found:
-                results_lol.append([dict_dnsquery['Domain_Name'], test_result])
+                tracked_results_lol.append([dict_dnsquery['Domain_Name'], test_result])
                 alt_dns_result.append(result)
-    logger.debug('Removing duplicates before %s after %s', len(dns_result), len(alt_dns_result))
-    return results_lol, alt_dns_result
+    logger.debug('List size before %s after %s', len(dns_result), len(alt_dns_result))
+    return tracked_results_lol, alt_dns_result
     
 
 def print_success(dns_result, dict_dnsquery):

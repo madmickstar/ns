@@ -86,8 +86,6 @@ class ProfileHostname:
             return True
         except:
             return False
-
-
         
     def query_hostname(self):
         self._dns_profile = self.profile_dns()
@@ -165,3 +163,34 @@ class QueryServer():
             return results
         except:
             return results
+
+            
+class Memorise:
+    """
+    Creates accumlative dns results
+
+    Args:
+        host_list: results from most resent query
+
+    Returns:
+        mem: accumulative results
+    """
+    
+    mem = []
+    
+    @classmethod
+    def _append_hostname(cls, host_list):
+        for h in host_list:
+            if h not in cls.mem:
+                cls.mem.append(h)
+        return Memorise.mem
+    
+    def __init__(self, host_list=None):
+        self.host_list = host_list
+        if self.host_list is not None:
+            Memorise._append_hostname(self.host_list)
+        else:
+            Memorise.mem = []
+    
+    def get_updated_list(self):
+        return Memorise.mem  

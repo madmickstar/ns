@@ -14,8 +14,8 @@ py2exe_options = {
     'packages': ['dns'],
     'dll_excludes': ['w9xpopen.exe'], # exclude win95 98 dll files
     'includes': [], # additional modules
-    'excludes': ['Carbon', 'Carbon.Files', 'Crypto.PublicKey.DSA', 'Crypto.PublicKey.RSA', 'Crypto.Util.number', 'ecdsa', 'ecdsa.ecdsa', 'ecdsa.ellipticcurve', 'ecdsa.keys', 'winreg.CloseKey', 'winreg.HKEY_LOCAL_MACHINE', 'winreg.OpenKeyEx', 'winreg.QueryValueEx']  # exluded modules
-
+    'excludes': ['Carbon', 'Carbon.Files', 'Crypto.PublicKey.DSA', 'Crypto.PublicKey.RSA', 'Crypto.Util.number', 'ecdsa', 'ecdsa.ecdsa', 'ecdsa.ellipticcurve', 'ecdsa.keys', 'idna', 'winreg']  # exluded modules
+    #'excludes': []
 }
 
 setup(

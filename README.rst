@@ -22,6 +22,7 @@ NS features
    CNAME lookup
 -  Converts URIs or URLs to FQDN or IP address then performs DNS
    resolution
+-  Resolves inputs exhaustively
 -  User can define DNS server to query
 -  All features are all accessible from the convenience of a one liner
 -  Py2exe setup script provided with source code
@@ -45,7 +46,7 @@ Create Win32 EXE from source using py2exe
 Usage
 -----
 
-``ns {hostname} | {IP address} | {URL/URI} [ -s {server IP} | -t {1-10) | -l {5,10,20,30,60} | -h | -d | --version ]``
+``ns {hostname} | {IP address} | {URL/URI} [ -s {server IP} | -t {1-10) | -l {5,10,20,30,60} | -x {10, 20, 30, 60} | -h | -d | --version ]``
 
 +-----------+---------+---------------------+-------------------+--------------------+
 | Argument  | Type    | Format              | Default           | Description        |
@@ -75,6 +76,9 @@ Usage
 |           |         | 60 sec}             |                   | multiple DNS       |
 |           |         |                     |                   | servers are        |
 |           |         |                     |                   | queried            |
++-----------+---------+---------------------+-------------------+--------------------+
+| -x        | integer | -x {10, 20, 30, 60} | 10                | Exhuastive lookup  |
+|           |         |                     |                   | resolution limit   |
 +-----------+---------+---------------------+-------------------+--------------------+
 | -h        | switch  | -h                  | disabled          | Prints help to     |
 |           |         |                     |                   | console            |
